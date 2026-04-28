@@ -20,7 +20,12 @@ async function bootstrap() {
   );
 
   app.enableShutdownHooks();
-  await app.listen(Number(process.env.PORT ?? 4000));
+
+  const port = Number(process.env.PORT ?? 4000);
+
+  await app.listen(port, '0.0.0.0');
+
+  console.log(`Servidor corriendo en puerto ${port}`);
 }
 
 void bootstrap();
