@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ClientStatus {
+  ACTIVO
+  PENDIENTE
+  SIN_CUENTA
+}
+
+enum AccountStatus {
+  CONECTADO
+  PENDIENTE
+  DESCONECTADO
+}
+
+enum AnalysisStatus {
+  pending
+  analyzed
+  failed
+}
+
+enum Sentiment {
+  POSITIVO
+  NEGATIVO
+  NEUTRAL
+}
+
+enum SyncRunStatus {
+  running
+  success
+  failed
+}
+
+enum SyncTrigger {
+  manual
+  cron
+}
+
+enum UserRole {
+  ADMIN
+  ANALYST
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         UserRole @default(ANALYST)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Client {
+  id         String       @id
+  name       String
+  shortName  String
+  industry   String
+  description String
+  status     ClientStatus @default(ACTIVO)
+  connected  Boolean      @default(false)
+  avatarColor String      @default("#2563eb")
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  accounts    SocialAccount[]
+  posts       Post[]
+  oauthStates OauthState[]
+  syncRuns    SyncRun[]
+  postMetrics PostMetric[]
+
+  @@map("clients")
+}
+
+model SocialAccount {
+  id           String       @id @default(cuid())
+  clientId     String
+  platform     String       @default("Instagram Business")
+  handle       String
+  igBusinessId String?
+  facebookPage String?
+  scopes       String[]
+  status       AccountStatus @default(PENDIENTE)
+  lastSyncAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  client   Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  token    OauthToken?
+  posts    Post[]
+  syncRuns SyncRun[]
+
+  @@index([clientId])
+  @@map("social_accounts")
+}
+
+model OauthState {
+  id        String   @id @default(cuid())
+  nonce     String   @unique
+  clientId  String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("oauth_states")
+}
+
+model OauthToken {
+  id                       String   @id @default(cuid())
+  accountId                String   @unique
+  encryptedAccessToken     String
+  encryptedLongLivedToken  String?
+  expiresAt                DateTime?
+  scope                    String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  account SocialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("oauth_tokens")
+}
+
+model Post {
+  id               String   @id
+  clientId         String
+  accountId        String
+  caption          String
+  publishedAt      DateTime
+  imageUrl         String?
+  imageHint        String?
+  likes            Int      @default(0)
+  commentsCount    Int      @default(0)
+  analyzedComments Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  client   Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  account  SocialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  analyses CommentAnalysis[]
+  metric   PostMetric?
+
+  @@index([clientId, publishedAt])
+  @@index([accountId, publishedAt])
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id
+  postId    String
+  username  String
+  text      String
+  likes     Int      @default(0)
+  createdAt DateTime
+  updatedAt DateTime @updatedAt
+
+  post     Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  analysis CommentAnalysis?
+
+  @@index([postId, createdAt])
+  @@map("comments")
+}
+
+model CommentAnalysis {
+  id        String         @id @default(cuid())
+  commentId String         @unique
+  postId    String
+  sentiment Sentiment?
+  emotion   String?
+  confidence Float?
+  status    AnalysisStatus @default(pending)
+  retryCount Int           @default(0)
+  lastAttemptAt DateTime?
+  error     String?
+  analyzedAt DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, status])
+  @@map("comment_analysis")
+}
+
+model PostMetric {
+  id         String   @id @default(cuid())
+  postId     String   @unique
+  clientId   String
+  likes      Int      @default(0)
+  comments   Int      @default(0)
+  engagement Float    @default(0)
+  positive   Int      @default(0)
+  negative   Int      @default(0)
+  neutral    Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@map("post_metrics")
+}
+
+model SyncRun {
+  id            String       @id @default(cuid())
+  trigger       SyncTrigger
+  status        SyncRunStatus @default(running)
+  clientId      String?
+  accountId     String?
+  startedAt     DateTime     @default(now())
+  finishedAt    DateTime?
+  error         String?
+  postsSynced   Int          @default(0)
+  commentsSynced Int         @default(0)
+  analyzedCount Int          @default(0)
+
+  client  Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  account SocialAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([status, startedAt])
+  @@map("sync_runs")
+}
