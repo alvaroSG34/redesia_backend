@@ -70,7 +70,7 @@ function buildAlerts(clients, analysisCoveragePct) {
             draft.push({
                 id: `sync-${client.clientId}`,
                 severity: 'medium',
-                title: `Sincronizaci�n vencida en ${client.name}`,
+                title: `Sincronizacion vencida en ${client.name}`,
                 description: `Sin sincronizar hace ${Math.floor(client.staleSyncHours)} horas.`,
                 actionLabel: 'Sincronizar',
                 actionHref: `/clients/${client.clientId}/accounts`,
@@ -84,7 +84,7 @@ function buildAlerts(clients, analysisCoveragePct) {
                 id: `pending-${client.clientId}`,
                 severity: 'high',
                 title: `Alta carga pendiente en ${client.name}`,
-                description: `${client.pendingComments} comentarios pendientes de an�lisis.`,
+                description: `${client.pendingComments} comentarios pendientes de analisis.`,
                 actionLabel: 'Ir a cuenta',
                 actionHref: `/clients/${client.clientId}/accounts`,
                 ruleId: 'PENDING_WORKLOAD',
@@ -97,7 +97,7 @@ function buildAlerts(clients, analysisCoveragePct) {
         draft.push({
             id: 'coverage-global',
             severity: 'medium',
-            title: 'Cobertura de an�lisis baja',
+            title: 'Cobertura de analisis baja',
             description: `Solo ${analysisCoveragePct}% de comentarios fueron analizados.`,
             actionLabel: 'Ver clientes',
             actionHref: '/clients',
@@ -128,7 +128,7 @@ function buildTodayActions(alerts) {
             {
                 id: 'default-1',
                 title: 'Revisar clientes activos',
-                description: 'No hay alertas cr�ticas. Revisa desempe�o general.',
+                description: 'No hay alertas criticas. Revisa desempeno general.',
                 href: '/clients',
                 priority: 1,
             },
@@ -141,8 +141,8 @@ function buildTodayActions(alerts) {
             },
             {
                 id: 'default-3',
-                title: 'Planificar pr�ximos an�lisis',
-                description: 'Prioriza posts con m�s comentarios de la semana.',
+                title: 'Planificar proximos analisis',
+                description: 'Prioriza posts con mas comentarios de la semana.',
                 href: '/clients',
                 priority: 3,
             },

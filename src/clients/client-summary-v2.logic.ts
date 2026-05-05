@@ -81,8 +81,8 @@ export function buildClientAlerts(input: ClientAlertInput): ClientAlert[] {
     alerts.push({
       id: `stale-sync-${input.clientId}`,
       severity: 'medium',
-      title: 'Sincronizacion retrasada',
-      description: `Ultima sincronizacion hace ${Math.floor(input.staleSyncHours)} horas.`,
+      title: 'Sincronizaci\u00f3n retrasada',
+      description: `\u00daltima sincronizaci\u00f3n hace ${Math.floor(input.staleSyncHours)} horas.`,
       actionLabel: 'Sincronizar',
       actionHref: `/clients/${input.clientId}/accounts`,
       ruleId: 'STALE_SYNC',
@@ -95,7 +95,7 @@ export function buildClientAlerts(input: ClientAlertInput): ClientAlert[] {
     alerts.push({
       id: `low-coverage-${input.clientId}`,
       severity: 'medium',
-      title: 'Cobertura de analisis baja',
+      title: 'Cobertura de an\u00e1lisis baja',
       description: `Solo ${input.coveragePct}% de comentarios analizados.`,
       actionLabel: 'Ver publicaciones',
       actionHref: `/clients/${input.clientId}/posts`,
@@ -124,7 +124,7 @@ export function buildClientAlerts(input: ClientAlertInput): ClientAlert[] {
       id: `pending-workload-${input.clientId}`,
       severity: 'high',
       title: 'Carga pendiente alta',
-      description: `${input.pendingComments} comentarios pendientes de analisis.`,
+      description: `${input.pendingComments} comentarios pendientes de an\u00e1lisis.`,
       actionLabel: 'Ir a cuentas',
       actionHref: `/clients/${input.clientId}/accounts`,
       ruleId: 'PENDING_WORKLOAD',

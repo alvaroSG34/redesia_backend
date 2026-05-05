@@ -110,7 +110,7 @@ export function mapAccount(account: SocialAccount): SocialAccountContract {
     status: mapAccountStatus(account.status),
     lastSync: account.lastSyncAt
       ? formatRelativeDate(account.lastSyncAt)
-      : 'sin sincronizacion',
+      : 'sin sincronizaci\u00f3n',
   };
 }
 

@@ -101,7 +101,7 @@ export function buildAlerts(
       draft.push({
         id: `sync-${client.clientId}`,
         severity: 'medium',
-        title: `Sincronización vencida en ${client.name}`,
+        title: `Sincronizaci\u00f3n vencida en ${client.name}`,
         description: `Sin sincronizar hace ${Math.floor(client.staleSyncHours)} horas.`,
         actionLabel: 'Sincronizar',
         actionHref: `/clients/${client.clientId}/accounts`,
@@ -116,7 +116,7 @@ export function buildAlerts(
         id: `pending-${client.clientId}`,
         severity: 'high',
         title: `Alta carga pendiente en ${client.name}`,
-        description: `${client.pendingComments} comentarios pendientes de análisis.`,
+        description: `${client.pendingComments} comentarios pendientes de an\u00e1lisis.`,
         actionLabel: 'Ir a cuenta',
         actionHref: `/clients/${client.clientId}/accounts`,
         ruleId: 'PENDING_WORKLOAD',
@@ -130,7 +130,7 @@ export function buildAlerts(
     draft.push({
       id: 'coverage-global',
       severity: 'medium',
-      title: 'Cobertura de análisis baja',
+      title: 'Cobertura de an\u00e1lisis baja',
       description: `Solo ${analysisCoveragePct}% de comentarios fueron analizados.`,
       actionLabel: 'Ver clientes',
       actionHref: '/clients',
@@ -166,7 +166,7 @@ export function buildTodayActions(alerts: DashboardV2Alert[]): DashboardV2Action
       {
         id: 'default-1',
         title: 'Revisar clientes activos',
-        description: 'No hay alertas críticas. Revisa desempeño general.',
+        description: 'No hay alertas cr\u00edticas. Revisa desempe\u00f1o general.',
         href: '/clients',
         priority: 1,
       },
@@ -179,8 +179,8 @@ export function buildTodayActions(alerts: DashboardV2Alert[]): DashboardV2Action
       },
       {
         id: 'default-3',
-        title: 'Planificar próximos análisis',
-        description: 'Prioriza posts con más comentarios de la semana.',
+        title: 'Planificar pr\u00f3ximos an\u00e1lisis',
+        description: 'Prioriza posts con m\u00e1s comentarios de la semana.',
         href: '/clients',
         priority: 3,
       },
