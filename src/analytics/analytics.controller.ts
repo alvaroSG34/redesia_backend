@@ -1,6 +1,7 @@
-﻿import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ExportReportDto } from './dto/export-report.dto';
 import { AnalyticsService } from './analytics.service';
 
 @Controller('v1/posts/:postId/comments')
@@ -31,5 +32,13 @@ export class AnalyticsController {
   ) {
     return this.analyticsService.reanalyzeComment(postId, commentId);
   }
-}
 
+  @UseGuards(JwtAuthGuard)
+  @Post('export-report')
+  getCommentsExportReport(
+    @Param('postId') postId: string,
+    @Body() input: ExportReportDto,
+  ) {
+    return this.analyticsService.getCommentsExportReport(postId, input.objective);
+  }
+}

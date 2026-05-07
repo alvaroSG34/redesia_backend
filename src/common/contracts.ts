@@ -102,6 +102,61 @@ export interface CommentsWorkbenchV2Response {
   };
 }
 
+export interface CommentsExportReportResponse {
+  header: {
+    postId: string;
+    clientId: string;
+    clientName: string;
+    postCaption: string;
+    publishedAt: string;
+    imageUrl?: string | null;
+  };
+  objective: string;
+  summary: {
+    totalComments: number;
+    analyzed: number;
+    positive: number;
+    negative: number;
+    neutral: number;
+    emotionDistribution: Array<{
+      emotion: string;
+      count: number;
+      percentage: number;
+    }>;
+  };
+  emotionGroups: Array<{
+    emotion: string;
+    count: number;
+    comments: Array<{
+      commentId: string;
+      username: string;
+      text: string;
+      likes: number;
+      createdAt: string;
+      sentiment: SentimentLabel;
+      confidence: number | null;
+    }>;
+  }>;
+  executive: {
+    coveragePct: number;
+    highlights: string[];
+    nextSteps: Array<{
+      priority: 'Alta' | 'Media' | 'Baja';
+      action: string;
+      rationale: string;
+    }>;
+  };
+  recommendationSource: 'multimodal_ai' | 'fallback';
+  recommendationInputsUsed: {
+    image: boolean;
+    caption: boolean;
+    objective: boolean;
+    comments: boolean;
+  };
+  recommendation: string;
+  generatedAt: string;
+}
+
 export interface DashboardKpiContract {
   id: string;
   label: string;

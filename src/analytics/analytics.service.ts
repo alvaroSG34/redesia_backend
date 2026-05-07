@@ -1,12 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { AnalysisStatus } from '@prisma/client';
 
 import { AiBatchResult, AiService } from '../ai/ai.service';
 import {
+  buildExecutiveSection,
+  buildExportGroups,
+  buildExportSummary,
+  buildFallbackRecommendation,
+  limitEmotionGroupComments,
+  pickRecommendation,
+} from './comments-export.logic';
+import {
+  type CommentsExportReportResponse,
   type CommentsWorkbenchV2Response,
   type PostAnalysisSummary,
 } from '../common/contracts';
-import { formatPostDate, mapAnalysis, sentimentFromEmotion } from '../common/mappers';
+import {
+  formatPostDate,
+  formatRelativeDate,
+  mapAnalysis,
+  mapSentiment,
+  sentimentFromEmotion,
+} from '../common/mappers';
 import { MetricsService } from '../metrics/metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -145,6 +160,130 @@ export class AnalyticsService {
     await this.analyzeRows(postId, [target]);
     await this.metricsService.recomputePostMetric(postId);
     return this.getCommentsWorkbenchV2(postId);
+  }
+
+  async getCommentsExportReport(
+    postId: string,
+    objectiveInput: string,
+  ): Promise<CommentsExportReportResponse> {
+    const objective = objectiveInput.trim();
+    if (!objective) {
+      throw new BadRequestException('objective is required');
+    }
+
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      throw new NotFoundException(`Post '${postId}' not found`);
+    }
+
+    const comments = await this.getCommentsWithAnalysis(postId);
+
+    const analyzedRows = comments
+      .filter(
+        (row) =>
+          row.analysis?.status === AnalysisStatus.analyzed && !!row.analysis?.emotion,
+      )
+      .map((row) => ({
+        commentId: row.id,
+        username: row.username,
+        text: row.text,
+        likes: row.likes,
+        createdAt: row.createdAt,
+        sentiment: mapSentiment(row.analysis?.sentiment ?? null),
+        emotion: row.analysis?.emotion ?? '-',
+        confidence: row.analysis?.confidence ?? null,
+      }));
+
+    const groups = buildExportGroups(analyzedRows);
+    const summary = buildExportSummary(comments.length, analyzedRows, groups);
+    const topEmotion = groups[0]?.emotion ?? null;
+
+    const fallbackRecommendation = buildFallbackRecommendation(
+      objective,
+      summary,
+      topEmotion,
+    );
+
+    const limitedGroups = limitEmotionGroupComments(groups, 7);
+    const multimodal = await this.ai.generateMultimodalRecommendation({
+      imageUrl: post.imageUrl ?? null,
+      postCaption: post.caption,
+      objective,
+      summary: {
+        analyzed: summary.analyzed,
+        positive: summary.positive,
+        negative: summary.negative,
+        neutral: summary.neutral,
+        totalComments: summary.totalComments,
+      },
+      topEmotions: summary.emotionDistribution.slice(0, 5),
+      emotionGroups: limitedGroups.map((group) => ({
+        emotion: group.emotion,
+        comments: group.comments.map((item) => ({
+          text: item.text,
+          sentiment: item.sentiment,
+          confidence: item.confidence,
+          likes: item.likes,
+        })),
+      })),
+    });
+
+    const recommendation = pickRecommendation(
+      multimodal.recommendation,
+      fallbackRecommendation,
+    );
+    const recommendationSource =
+      multimodal.recommendation?.trim().length
+        ? 'multimodal_ai'
+        : 'fallback';
+    const executive = buildExecutiveSection(
+      objective,
+      summary,
+      topEmotion,
+      recommendation,
+    );
+
+    return {
+      header: {
+        postId: post.id,
+        clientId: post.client.id,
+        clientName: post.client.name,
+        postCaption: post.caption,
+        publishedAt: formatPostDate(post.publishedAt),
+        imageUrl: post.imageUrl ?? null,
+      },
+      objective,
+      summary,
+      emotionGroups: limitedGroups.map((group) => ({
+        emotion: group.emotion,
+        count: group.count,
+        comments: group.comments.map((item) => ({
+          commentId: item.commentId,
+          username: item.username,
+          text: item.text,
+          likes: item.likes,
+          createdAt: formatRelativeDate(item.createdAt),
+          sentiment: item.sentiment,
+          confidence: item.confidence,
+        })),
+      })),
+      executive,
+      recommendationSource,
+      recommendationInputsUsed: multimodal.inputsUsed,
+      recommendation,
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   private async analyzeRows(
